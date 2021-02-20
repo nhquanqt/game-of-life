@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            #canvas-container {
+                position: absolute;
+                top:0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin:auto;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas-container" width="500" height="500"></canvas>
+        <script>
+            
+var canvas = document.getElementById('canvas-container');
+var ctx = canvas.getContext('2d'); // TODO: change to webgl for performance
+
+var scale = 1;
+var width = canvas.width / scale;
+var height = canvas.height / scale;
+var offset = 2;
+
+var foot_print = 256;
+
+var board = new_2d_array(height, width);
+var time = new_2d_array(height, width);
+
+setInterval(draw, 10);
+
+function new_2d_array(h, w, init_value=0)
+{
+    var arr = new Array(h);
+    for(var i = 0; i < h; ++i)
+    {
+        arr[i] = new Array(w).fill(init_value);
+    }
+    return arr;
+}
+
+function next_gen() {
+    var new_gen = new_2d_array(height, width);
+
+    for(var y = 0; y < height; ++y) {
+        for(var x = 0; x < width; ++x) {
+
+            var cnt = 0;
+
+            for(u = x - 1; u <= x + 1; ++u) {
+                for(v = y - 1; v <= y + 1; ++v) {
+                    if(u < 0 || u >= width || v < 0 || v >= height) continue;
+                    cnt += board[v][u];
+                }
+            }
+
+            cnt -= board[y][x];
+
+            if(board[y][x] == 0)
+            {
+                if(cnt == 3 || cnt == 7)
+                {
+                    new_gen[y][x] = 1;
+                    time[y][x] = foot_print;
+                }
+                else
+                {
+                    new_gen[y][x] = 0;
+                    time[y][x] = Math.max(time[y][x]-1, 0);
+                }
+            }
+            if(board[y][x] == 1)
+            {
+                if(cnt < 2 || cnt > 3)
+                {
+                    new_gen[y][x] = 0;
+                    time[y][x] = Math.max(time[y][x]-1, 0);
+                }
+                else
+                {
+                    new_gen[y][x] = 1;
+                    time[y][x] = foot_print;
+                }
+            }
+        }
+    }
+
+    for(var i = 0; i < height; ++i)
+    {
+        for(var j = 0; j < width; ++j)
+        {
+            board[i][j] = new_gen[i][j] == 0 ? 0 : 1;
+        }
+    }
+
+}
+
+function draw() {
+
+    for(var y = 0; y < height; ++y) {
+        for(var x = 0; x < width; ++x) {
+            if(y < offset || y >= height - offset || x < offset || x >= width - offset)
+            {
+                board[y][x] = Math.floor(Math.random() * 2);
+            }
+        }
+    }
+
+    var imgData = ctx.createImageData(width * scale, height * scale);
+    
+    for(var u = 0; u < width * scale; ++u) {
+        for(var v = 0; v < height * scale; ++v) {
+            var x = Math.floor(u / scale);
+            var y = Math.floor(v / scale);
+
+            imgData.data[(v * width * scale + u) * 4 + 0] = 237 * time[y][x] / foot_print;
+            imgData.data[(v * width * scale + u) * 4 + 1] = 242 * time[y][x] / foot_print;
+            imgData.data[(v * width * scale + u) * 4 + 2] = 251 * time[y][x] / foot_print;
+
+            imgData.data[(v * width * scale + u) * 4 + 3] = 255;
+        }
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+
+    next_gen();
+}
+
+        </script>
+    </body>
+</html>
+
